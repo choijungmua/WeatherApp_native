@@ -65,7 +65,7 @@ export default function App() {
                     }
                   >
                     <MapPinIcon size="20" color="gray" />
-                    <Text>London, United Kingdom</Text>
+                    <Text>London, United Kingdom!</Text>
                   </TouchableOpacity>
                 );
               })}
