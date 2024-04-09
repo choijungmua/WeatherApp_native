@@ -16,14 +16,38 @@ import {
 import { MapPinIcon } from "react-native-heroicons/solid";
 import { Image } from "react-native";
 import { theme } from "./theme";
-import { useState } from "react";
+import { useCallback, useState } from "react";
+import { debounce } from "lodash";
+import { fetchLocations, fetchWeatherForecast } from "./api/weather";
+import { weatherImages } from "./constants";
 export default function App() {
   const [showSearch, toggleSearch] = useState(false);
-  const [locations, setLocations] = useState([1, 2, 3]);
+  const [locations, setLocations] = useState([]);
+  const [weather, setWeather] = useState({});
 
   const handleLocation = (loc) => {
     console.group("location", loc);
+    setLocations([]);
+    toggleSearch(false);
+    fetchWeatherForecast({
+      cityName: loc.name,
+      days: "7",
+    }).then((data) => {
+      console.log("got forecast: ", data);
+      setWeather(data);
+    });
   };
+  const handleSearch = (value) => {
+    //fetch locations
+    if (value.length > 2) {
+      console.log("location: ", value);
+      fetchLocations({ cityName: value }).then((data) => {
+        setLocations(data);
+      });
+    }
+  };
+  const handleTextDebounce = useCallback(debounce(handleSearch, 1200), []);
+  const { current, location } = weather;
   return (
     <View className="flex-1 relative">
       <StatusBar style="light" />
@@ -43,6 +67,7 @@ export default function App() {
           >
             {showSearch ? (
               <TextInput
+                onChangeText={handleTextDebounce}
                 placeholder="위치를 검색하세요"
                 placeholderTextColor={"lightgray"}
                 className="pl-6 h-10 flex-1 text-base text-white"
@@ -75,7 +100,7 @@ export default function App() {
                   >
                     <MapPinIcon size="20" color="gray" />
                     <Text className="color-black ml-2 text-lg">
-                      London, United Kingdom!
+                      {loc?.name}, {loc?.country}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -85,26 +110,28 @@ export default function App() {
         </View>
         {/* forecast section */}
         <View className="mx-4 flex justify-around flex-1 mb-2">
+          {/* location */}
           <Text className="text-white text-center text-2xl font-bold">
-            London,
+            {location?.name},
             <Text className="text-lg font-semibold text-gray-300">
-              United Kingdom
+              {" " + location?.country}
             </Text>
           </Text>
           {/* Weateher image */}
           <View className="flex-row justify-center">
             <Image
-              source={require("./assets/images/partlycloudy.png")}
+              source={weatherImages[current?.condition?.text]}
+              // source={require("./assets/images/partlycloudy.png")}
               className="w-52 h-52"
             />
           </View>
           {/* degree celcius */}
           <View className="space-y-2">
             <Text className="text-center font-bold text-white text-6xl ml-5">
-              23&#176;
+              {current?.temp_c}&#176;
             </Text>
             <Text className="text-center text-white text-xl tracking-widest">
-              Partly cloudy
+              {current?.condition?.text}
             </Text>
           </View>
           {/* other status */}
